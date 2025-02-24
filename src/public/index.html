@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Sistema de Mensajería WebSocket</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Manejo de conexión
+        socket.on('connect', () => {
+            console.log('Conectado al servidor');
+            // Unirse al chat
+            socket.emit('join', { username: 'Usuario' + Math.floor(Math.random() * 1000) });
+        });
+
+        // Recibir mensaje de bienvenida
+        socket.on('welcome', (data) => {
+            console.log('Mensaje de bienvenida:', data.message);
+        });
+
+        // Recibir nuevos mensajes
+        socket.on('newMessage', (message) => {
+            console.log('Nuevo mensaje:', message);
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<p><strong>${message.username}:</strong> ${message.content}</p>`;
+        });
+
+        // Manejar eventos de usuarios
+        socket.on('userJoined', (data) => {
+            console.log('Usuario unido:', data);
+            updateUserList(data.onlineUsers);
+        });
+
+        socket.on('userLeft', (data) => {
+            console.log('Usuario abandonó:', data);
+            updateUserList(data.onlineUsers);
+        });
+
+        // Actualizar lista de usuarios
+        function updateUserList(users) {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '<h3>Usuarios en línea:</h3>';
+            users.forEach(user => {
+                userList.innerHTML += `<div>${user.username}</div>`;
+            });
+        }
+
+        // Enviar mensaje
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            if (content) {
+                socket.emit('message', { content });
+                input.value = '';
+            }
+        }
+
+        // Manejar errores
+        socket.on('error', (error) => {
+            console.error('Error del servidor:', error);
+        });
+
+        // Ping periódico
+        setInterval(() => {
+            socket.emit('ping');
+        }, 30000);
+    </script>
+</head>
+
+<body>
+    <div id="userList"></div>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+    <button onclick="sendMessage()">Enviar</button>
+</body>
+
+</html>
